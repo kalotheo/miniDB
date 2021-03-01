@@ -328,56 +328,36 @@ class Table:
 
         return join_table
 
+    def _index_join(self, table_right: Table, bt, condition):
 
-    def show(self, no_of_rows=None, is_locked=False):
-        '''
-        Pretty print the table
-        '''
-        # if the table is locked, add locked keyword to title
-        if is_locked:
-            print(f"\n## {self._name} (locked) ##")
-        else:
-            print(f"\n## {self._name} ##")
+        return_cols = [i for i in range(len(self.column_names))]
+        # get columns and operator
+        column_name_left, operator, column_name_right = self._parse_condition(condition, join=True)
+        if operator != '==':
+            print(f'Only == is allowed')
+            return
+        # try to find both columns, if you fail raise error
+        try:
+            column_index_left = self.column_names.index(column_name_left)
+            column_index_right = table_right.column_names.index(column_name_right)
+        except:
+            raise Exception(f'Columns dont exist in one or both tables.')
+        left_names = [f'{self._name}_{colname}' for colname in self.column_names]
+        right_names = [f'{table_right._name}_{colname}' for colname in table_right.column_names]
 
-        # headers -> "column name (column type)"
-        headers = [f'{col} ({tp.__name__})' for col, tp in zip(self.column_names, self.column_types)]
-        if self.pk_idx is not None:
-            # table has a primary key, add PK next to the appropriate column
-            headers[self.pk_idx] = headers[self.pk_idx]+' #PK#'
-        # detect the rows that are no tfull of nones (these rows have been deleted)
-        # if we dont skip these rows, the returning table has empty rows at the deleted positions
-        non_none_rows = [row for row in self.data if any(row)]
-        # print using tabulate
-        print(tabulate(non_none_rows[:no_of_rows], headers=headers)+'\n')
+        # define the new tables name, its column names and types
+        join_table_name = f'{self._name}_join_{table_right._name}'
+        join_table_colnames = left_names+right_names
+        join_table_coltypes = self.column_types+table_right.column_types
+        join_table = Table(name=join_table_name, column_names=join_table_colnames, column_types= join_table_coltypes)
 
+        for left_row in self.data:
+            left_value = left_row[column_index_left]
+            i = bt._search(left_value)
+            if i is not None:#if it exists in the index then merge
+                join_table._insert(left_row+[table_right.data[i][j] for j in range(len(table_right.column_names))])
+        return join_table
 
-    def _parse_condition(self, condition, join=False):
-        '''
-        Parse the single string condition and return column/s value and operator
-        '''
-        # if both_columns (used by the join function) return the names of the names of the columns (left first)
-        if join:
-            return split_condition(condition)
-
-        # cast the value with the specified column's type and return the column name, the operator and the casted value
-        left, op, right = split_condition(condition)
-        if left not in self.column_names:
-            raise ValueError(f'Condition is not valid (cant find column name)')
-        coltype = self.column_types[self.column_names.index(left)]
-
-        return left, op, coltype(right)
-
-
-    def _load_from_file(self, filename):
-        '''
-        Load table from a pkl file (not used currently)
-        '''
-        f = open(filename, 'rb')
-        tmp_dict = pickle.load(f)
-        f.close()
-
-        self.__dict__.update(tmp_dict)
-        
     def _sort_merge_join(self, table_right: Table, condition):
         column_name_left, operator, column_name_right = self._parse_condition(condition, join=True)
         if operator != '==':
@@ -430,3 +410,53 @@ class Table:
                     elif(left_value > right_value):
                          j2+=1
         return join_table
+    def show(self, no_of_rows=None, is_locked=False):
+        '''
+        Pretty print the table
+        '''
+        # if the table is locked, add locked keyword to title
+        if is_locked:
+            print(f"\n## {self._name} (locked) ##")
+        else:
+            print(f"\n## {self._name} ##")
+
+        # headers -> "column name (column type)"
+        headers = [f'{col} ({tp.__name__})' for col, tp in zip(self.column_names, self.column_types)]
+        if self.pk_idx is not None:
+            # table has a primary key, add PK next to the appropriate column
+            headers[self.pk_idx] = headers[self.pk_idx]+' #PK#'
+        # detect the rows that are no tfull of nones (these rows have been deleted)
+        # if we dont skip these rows, the returning table has empty rows at the deleted positions
+        non_none_rows = [row for row in self.data if any(row)]
+        # print using tabulate
+        print(tabulate(non_none_rows[:no_of_rows], headers=headers)+'\n')
+
+
+    def _parse_condition(self, condition, join=False):
+        '''
+        Parse the single string condition and return column/s value and operator
+        '''
+        # if both_columns (used by the join function) return the names of the names of the columns (left first)
+        if join:
+            return split_condition(condition)
+
+        # cast the value with the specified column's type and return the column name, the operator and the casted value
+        left, op, right = split_condition(condition)
+        if left not in self.column_names:
+            raise ValueError(f'Condition is not valid (cant find column name)')
+        coltype = self.column_types[self.column_names.index(left)]
+
+        return left, op, coltype(right)
+
+
+    def _load_from_file(self, filename):
+        '''
+        Load table from a pkl file (not used currently)
+        '''
+        f = open(filename, 'rb')
+        tmp_dict = pickle.load(f)
+        f.close()
+
+        self.__dict__.update(tmp_dict)
+        
+    
