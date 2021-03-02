@@ -263,7 +263,7 @@ class Table:
             return Table(load=dict).order_by(order_by, asc)
 
 
-    def order_by(self, column_name, asc=False):
+    def order_by(self, column_name, asc=True):
         '''
         Order by based on column
         '''
@@ -585,13 +585,13 @@ class Table:
                          j1+=1
                     elif(left_value > right_value):
                          j2+=1
-        elif(len(sorted_left_table.data) >  len(sorted_right_table.data)):
+        elif(len(sorted_left_table.data) >=  len(sorted_right_table.data)):
             for j2 in range(len(sorted_right_table.data)):
                 for j1 in range(len(sorted_left_table.data)):
                     if(j2 >= len(sorted_right_table.data)):
                         break
                     left_value = sorted_left_table.data[j1][column_index_left]
-                    right_value = sorted_right_table.data[j2][column_name_right]
+                    right_value = sorted_right_table.data[j2][column_index_right]
                     if(left_value == right_value):
                          join_table._insert([sorted_left_table.data[j1][i1] for i1 in range(len(sorted_left_table.column_names)) ]+[sorted_right_table.data[j2][i2] for i2 in range(len(sorted_right_table.column_names)) ])
                     elif(left_value < right_value):
