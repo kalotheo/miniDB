@@ -327,7 +327,196 @@ class Table:
         print(f'# Right table size -> {len(table_right.data)}')
 
         return join_table
+    
+    def _left_outer_join(self, table_right: Table, condition):
+        '''
+        Join table (left) with a supplied table (right) where condition is met.
+        '''
+        # get columns and operator
+        column_name_left, operator, column_name_right = self._parse_condition(condition, join=True)
+        # try to find both columns, if you fail raise error
+        try:
+            column_index_left = self.column_names.index(column_name_left)
+            column_index_right = table_right.column_names.index(column_name_right)
 
+        except:
+            raise Exception(f'Columns dont exist in one or both tables.')
+
+        # get the column names of both tables with the table name in front
+        # ex. for left -> name becomes left_table_name_name etc
+        left_names = [f'{self._name}_{colname}' for colname in self.column_names]
+        right_names = [f'{table_right._name}_{colname}' for colname in table_right.column_names]
+
+        # define the new tables name, its column names and types
+        join_table_name = f'{self._name}_join_{table_right._name}'
+        join_table_colnames = left_names+right_names
+        join_table_coltypes = self.column_types+table_right.column_types
+        join_table = Table(name=join_table_name, column_names=join_table_colnames, column_types= join_table_coltypes)
+
+
+        true_list_of_rows=[] # empty list which is used to put the rows we want to show where condtion==true
+        false_list_of_rows=[] # empty list which is used to put the rows we want to show where condtion==false
+        list_of_true_condition=[] #empty which is used to put the elements that have condition==true and remove them from false_list_of_rows
+
+        for row_left in self.data:
+
+            left_value = row_left[column_index_left]
+            for row_right in table_right.data:
+                right_value = row_right[column_index_right]
+                if get_op(operator, left_value, right_value)==True: #EQ_OP
+
+                    true_list_of_rows.append(row_left+row_right) #it appends the whole row without none values
+                    list_of_true_condition.append(left_value)
+                    list_of_true_condition.append(right_value)
+
+                elif get_op(operator, left_value, right_value)==False:
+
+
+                    size=len(row_right) #the size of the list
+                    row_right2=[] #new list which is used to add the rows which have none values inside
+                    for i in range(0,size):
+
+                        if(isinstance(row_right[i],str)): #checks if it is string
+                            row_right2.append(None)  #sets it None
+                        else:
+                            row_right2.append(0) #if it is integer, it sets 0, because an integer can't be equal to None
+
+                    false_list_of_rows.append(row_left+row_right2)
+
+
+
+        import itertools  #we want to remove the duplicates from the lists
+        true_list_of_rows = list(x for x,_ in itertools.groupby(true_list_of_rows))
+        false_list_of_rows = list(x for x,_ in itertools.groupby(false_list_of_rows))
+        list_of_true_condition = list(x for x,_ in itertools.groupby(list_of_true_condition))
+
+
+        #we want to show None only for the rows in which the condition is not true.
+        #So, we have to remove from the false_list_of_rows the elements that have condtion=true
+        for x in list_of_true_condition:
+            for y in false_list_of_rows:
+                if(x in y):
+                    false_list_of_rows.remove(y)
+
+
+
+        list_of_rows=true_list_of_rows+false_list_of_rows #we add the two lists into one
+
+        for x in list_of_rows: #we insert the list row_left+row_right2 to the join_table without the duplicates
+            join_table._insert(x)
+        return join_table
+
+
+    def _right_outer_join(self, table_right: Table, condition):
+        '''
+        Join table (left) with a supplied table (right) where condition is met.
+        '''
+        # get columns and operator
+        column_name_left, operator, column_name_right = self._parse_condition(condition, join=True)
+        # try to find both columns, if you fail raise error
+        try:
+            column_index_left = self.column_names.index(column_name_left)
+            column_index_right = table_right.column_names.index(column_name_right)
+
+        except:
+            raise Exception(f'Columns dont exist in one or both tables.')
+
+        # get the column names of both tables with the table name in front
+        # ex. for left -> name becomes left_table_name_name etc
+        left_names = [f'{self._name}_{colname}' for colname in self.column_names]
+        right_names = [f'{table_right._name}_{colname}' for colname in table_right.column_names]
+
+        # define the new tables name, its column names and types
+        join_table_name = f'{self._name}_join_{table_right._name}'
+        join_table_colnames = left_names+right_names
+        join_table_coltypes = self.column_types+table_right.column_types
+        join_table = Table(name=join_table_name, column_names=join_table_colnames, column_types= join_table_coltypes)
+
+
+        true_list_of_rows=[] # empty list which is used to put the rows we want to show where condtion==true
+        false_list_of_rows=[] # empty list which is used to put the rows we want to show where condtion==false
+        list_of_true_condition=[] #empty which is used to put the elements that have condition==true and remove them from false_list_of_rows
+
+        for row_right in table_right.data:
+
+            right_value = row_right[column_index_right]
+            for row_left in self.data:
+                left_value = row_left[column_index_left]
+                if get_op(operator, left_value, right_value)==True: #EQ_OP
+
+                    true_list_of_rows.append(row_left+row_right) #it appends the whole row without none values
+                    list_of_true_condition.append(left_value)
+                    list_of_true_condition.append(right_value)
+
+                elif get_op(operator, left_value, right_value)==False:
+
+
+                    size=len(row_left) #the size of the list
+                    row_left2=[] #new list which is used to add the rows which have none values inside
+                    for i in range(0,size):
+
+                        if(isinstance(row_left[i],str)): #checks if it is string
+                            row_left2.append(None)  #sets it None
+                        else:
+                            row_left2.append(0) #if it is integer, it sets 0, because an integer can't be equal to None
+
+                    false_list_of_rows.append(row_left2+row_right)
+
+        import itertools  #we want to remove the duplicates from the lists. We found the 3 lines below from google
+        true_list_of_rows = list(x for x,_ in itertools.groupby(true_list_of_rows))
+        false_list_of_rows = list(x for x,_ in itertools.groupby(false_list_of_rows))
+        list_of_true_condition = list(x for x,_ in itertools.groupby(list_of_true_condition))
+
+
+        #we want to show None only for the rows in which the condition is not true.
+        #So, we have to remove from the false_list_of_rows the elements that have condtion=true
+        for x in list_of_true_condition:
+            for y in false_list_of_rows:
+                if(x in y):
+                    false_list_of_rows.remove(y)
+
+
+
+        list_of_rows=true_list_of_rows+false_list_of_rows #we add the two lists into one
+
+        for x in list_of_rows: #we insert the list row_left+row_right2 to the join_table without the duplicates
+            join_table._insert(x)
+        return join_table
+
+
+    def _full_outer_join(self, table_right: Table, condition):
+      join_table1 = self._left_outer_join(table_right, condition) # we use the return join_tables of the two functions
+      join_table2 = self._right_outer_join(table_right, condition)
+
+      # get the column names of both tables with the table name in front
+      # ex. for left -> name becomes left_table_name_name etc
+      left_names = [f'{self._name}_{colname}' for colname in self.column_names]
+      right_names = [f'{table_right._name}_{colname}' for colname in table_right.column_names]
+
+      # define the new tables name, its column names and types
+      join_table_name = f'{self._name}_join_{table_right._name}'
+      join_table_colnames = left_names+right_names
+      join_table_coltypes = self.column_types+table_right.column_types
+      join_table_coltypes = self.column_types+table_right.column_types
+      join_table = Table(name=join_table_name, column_names=join_table_colnames, column_types= join_table_coltypes)
+      #temporal table
+      tmp_table = Table(name=join_table_name, column_names=join_table_colnames, column_types= join_table_coltypes)
+      for row1 in join_table1.data:
+          tmp_table._insert(row1)
+      for row2 in join_table2.data:
+          tmp_table._insert(row2)
+      #we remove the dublicates of the combined list
+      help_list=[] #help list in order to avoid double elements
+      for row in tmp_table.data:
+          if(row not in help_list):
+              help_list.append(row)
+      for row in help_list:
+          join_table._insert(row)
+
+
+      return join_table
+
+    
     def _index_join(self, table_right: Table, bt, condition):
 
         return_cols = [i for i in range(len(self.column_names))]
