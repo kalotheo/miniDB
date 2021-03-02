@@ -422,6 +422,104 @@ class Database:
                 return res
             else:
                 res.show()
+                
+                
+    def left_outer_join(self, left_table_name, right_table_name, condition, save_as=None, return_object=False):
+        '''
+        left_outer_join returns all the records from the left table (left_table_name), 
+        and the matched records from the right table (right_table_name).
+        The result is None from the right side, if there is no match.
+
+        left_table_name -> left table's name (needs to exist in database)
+        right_table_name -> right table's name (needs to exist in database)
+        condition -> a condition using the following format :
+                    'column[<,<=,==,>=,>]value' or
+                    'value[<,<=,==,>=,>]column'.
+
+                    operatores supported -> (<,<=,==,>=,>)
+        save_as -> The name that will be used to save the resulting table in the database. Def: None (no save)
+        return_object -> If true, the result will be a table object (usefull for internal usage). Def: False (the result will be printed)
+        '''
+        self.load(self.savedir)
+        if self.is_locked(left_table_name) or self.is_locked(right_table_name):
+            print(f'Table/Tables are currently locked')
+            return
+
+        res = self.tables[left_table_name]._left_outer_join(self.tables[right_table_name], condition)
+        if save_as is not None:
+            res._name = save_as
+            self.table_from_object(res)
+        else:
+            if return_object:
+                return res
+            else:
+                res.show()
+
+
+    def right_outer_join(self, left_table_name, right_table_name, condition, save_as=None, return_object=False):
+        '''
+        right_outer_join all records from the right table (left_table_name),
+        and the matched records from the left table (right_table_name).
+         The result is NULL from the left side, when there is no match.
+
+        left_table_name -> left table's name (needs to exist in database)
+        right_table_name -> right table's name (needs to exist in database)
+        condition -> a condition using the following format :
+                    'column[<,<=,==,>=,>]value' or
+                    'value[<,<=,==,>=,>]column'.
+
+                    operatores supported -> (<,<=,==,>=,>)
+        save_as -> The name that will be used to save the resulting table in the database. Def: None (no save)
+        return_object -> If true, the result will be a table object (usefull for internal usage). Def: False (the result will be printed)
+        '''
+        self.load(self.savedir)
+        if self.is_locked(left_table_name) or self.is_locked(right_table_name):
+            print(f'Table/Tables are currently locked')
+            return
+
+        res = self.tables[left_table_name]._right_outer_join(self.tables[right_table_name], condition)
+
+        if save_as is not None:
+            res._name = save_as
+            self.table_from_object(res)
+        else:
+            if return_object:
+                return res
+            else:
+                res.show()
+
+
+    def full_outer_join(self, left_table_name, right_table_name, condition, save_as=None, return_object=False):
+        '''
+        full_outer_join is a combine of the outputs of left and right outer join
+
+        left_table_name -> left table's name (needs to exist in database)
+        right_table_name -> right table's name (needs to exist in database)
+        condition -> a condition using the following format :
+                    'column[<,<=,==,>=,>]value' or
+                    'value[<,<=,==,>=,>]column'.
+
+                    operatores supported -> (<,<=,==,>=,>)
+        save_as -> The name that will be used to save the resulting table in the database. Def: None (no save)
+        return_object -> If true, the result will be a table object (usefull for internal usage). Def: False (the result will be printed)
+        '''
+        self.load(self.savedir)
+        if self.is_locked(left_table_name) or self.is_locked(right_table_name):
+            print(f'Table/Tables are currently locked')
+            return
+
+
+        res= self.tables[left_table_name]._full_outer_join(self.tables[right_table_name], condition)
+
+        if save_as is not None:
+            res._name = save_as
+            self.table_from_object(res)
+
+        else:
+            if return_object:
+                return res
+            else:
+                res.show()            
     def lockX_table(self, table_name):
         '''
         Locks the specified table using the exclusive lock (X)
